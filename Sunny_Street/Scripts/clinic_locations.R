@@ -11,11 +11,17 @@ library(sf)
 detailed_stats <- tibble(read_excel("Data/detailed_stats.xlsx"))
 AUS_shp <- read_sf("./Shapefiles/LGA11aAust.shp")
 
+#prep data
+clinic_data <- detailed_stats %>% filter(Program != "COVID19 Respiratory Clinics") %>%
+  group_by(Latitude, Longitude, Program) %>%
+  summarise(n = n())
+clinic_data
 #plot map
 clinic_locations <- ggplot() +
   geom_sf(data=AUS_shp, colour="#FEF7D2", fill="#ed0c6e") +
-  geom_point(data=filter(detailed_stats,Program != "COVID19 Respiratory Clinics"), 
-             mapping=aes(x=Longitude,y=Latitude, colour=Program), size=1) +
+  geom_point(data=clinic_data, 
+             mapping=aes(x=Longitude,y=Latitude, colour=Program, size=as.character(round_any(n, 50, f = ceiling)))) +
+  scale_size_manual("", values=c(1,2,3), breaks = c("50", "100", "200"), na.value = NA) +
   scale_color_manual("Program", values=c("Fraser Coast"="#21958C", "Brisbane"="black", "Gold Coast"="#fddb22", "Sunshine Coast"="#BEBEBE")) +
   coord_sf(xlim = c(151.5, 154), ylim = c(-28,-25), expand=F) +
   theme(plot.background = element_rect(fill = "#FEF7D2", colour="#FEF7D2"),
@@ -35,6 +41,6 @@ clinic_locations <- ggplot() +
 clinic_locations
 
 #save plot as pdf
-setwd("../Viz")
-ggsave(clinic_locations, filename = "clinic_locations.pdf",  device=cairo_pdf, bg = "transparent", height=75, width=100, unit="mm")
+setwd("./Viz")
+ggsave(clinic_locations, filename = "clinic_locations.pdf",  device=cairo_pdf, bg = "transparent", height=75, width=120, unit="mm")
 
